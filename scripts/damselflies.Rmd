@@ -1,0 +1,373 @@
+---
+title: "Damselflies"
+author: "Chandrashekar CR"
+date: "01-01-2025"
+output: html_document
+---
+
+Date: 01-01-2025
+
+# Read the data
+
+The data originates from a field monitoring project conducted in Sweden, focusing on two species of damselflies, Calopteryx splendens and Calopteryx virgo. These damselflies are commonly found in riverine aquatic habitats across Europe. Over five consecutive summers (June and July, 2011–2015), a team of researchers and students conducted repeated visits to study a single population. The dataset includes several morphological traits (linear measurements of the body, abdomen, thorax, and wings), a trait linked to sexual selection (forewing patch length and width, measured only in C. splendens), and two fitness-related variables (copulation status as a proxy for mating success, and lifespan as a proxy for longevity).
+
+To begin, I plan to familiarize myself with damselflies and explore intriguing questions about their biology and ecology. My initial step will be a preliminary examination of the dataset to understand its structure and variables. This will allow me to formulate specific research questions that can be addressed using the collected data.
+
+
+Variables included in this dataset are as follows: 
+
+- year : sampled year (unit: year)
+- id : id that is unique to each individual
+- sp : species identity. CS stands for C. splendens, CV stands for C. virgo
+- sex : sex of the specimens. Male for male and Female for female.
+- tbl : total body length, which is the distance from the front tip of the head to the
+- rear tip of the abdomen (unit: mm)
+- abl : abdomen length (unit: mm)
+- thorl : thorax length (unit: mm)
+- thorw : thorax width (unit: mm)
+- fwl : forewing length (unit: mm)
+- hwl : hindwing length (unit: mm)
+- fpl : forewing patch length (unit: mm). Only in male C. splendens
+- fpw : forewing patch width (unit: mm). Only in male C. splendens
+- cop : copulation status. 0 means that the individual was always found without a partner, 1 means that the individual was found while mating with a partner at least once
+- marked : date the individual was marked
+- lifespan : days from date marked to date last seen (unit: days)
+
+```{r}
+# Clear any pre-stored variables in the environment
+rm(list = ls())
+
+# Import Libraries
+library(MASS)
+library(tidyverse)
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+
+# Load the data
+male_CS = read.csv("../data/male_CS.csv")
+male_CV = read.csv("../data/male_CV.csv")
+female_CS = read.csv("../data/female_CS.csv")
+female_CV = read.csv("../data/female_CV.csv")
+
+data = bind_rows(male_CS, male_CV, female_CS, female_CV)
+
+head(data)
+```
+
+Date: 02-01-2025
+
+Following a thorough literature survey, I identified several relevant papers examining variations in wing pigmentation, wing traits, and other morphological traits. I intend to conduct a comparative analysis to determine if both morphological and sexual traits contribute to copulation status. This research builds upon the findings of Golab and Brodin's study "Looks or personality: what drives damselfly male mating success in the wild?" (2023), which will serve as a theoretical framework to compare whether my results align with their findings.
+
+The research question will be addressed through a sequential analysis of four sub-questions:
+
+- What is the relationship between copulation status and individual sexual traits (forewing patch length and width)? This will be analyzed using analysis of variance (ANOVA).
+- Which predictor better explains copulation status: forewing patch length alone, width alone, or both measures combined? This relationship will be examined using logistic regression models.
+- How do morphological traits collectively influence copulation status? A comprehensive logistic regression analysis will be conducted using all available morphological traits as predictors.
+- Which better predicts copulation status: morphological traits, sexual traits, or a combination of both? A comparative analysis of logistic regression models will be used to evaluate the relative importance of these trait categories.
+
+This systematic approach will allow us to understand both the individual and combined effects of morphological and sexual traits on mating success.
+
+# Statistical Analysis Plan for Copulation Status Study
+
+## Analysis 1: Sexual Traits and Copulation Status
+### Primary Analysis: One-way ANOVA
+- **Variables**: Forewing patch length (FPL) and forewing patch width (FPW)
+- **Prerequisites**:
+  1. Verify normality within copulation status groups using:
+     - Shapiro-Wilk tests
+- **Define the ANOVA model**:
+  1. model = lm(x~groups)
+
+```{r}
+# Clear the environment
+rm(list = ls())
+# Read the data and filter accrodingly
+male_CS = read.csv("../data/male_CS.csv")
+male_CS = male_CS %>% 
+  select(fpl,fpw,cop) %>% 
+  mutate(cop = as.factor(cop))
+
+# Verify normality within copulation status groups
+# ---------- Forewing patch width ---------------
+# Histogram
+male_CS %>%
+  ggplot(aes(x = fpw, fill = cop)) +
+  geom_histogram(alpha = 0.6, bins = 15, position = "identity") +
+  facet_wrap(~cop) +
+  theme_classic() +
+  labs(title = "Distribution of FPW by Copulation Status")
+
+# Q-Q Plot
+male_CS %>%
+  ggplot(aes(sample = fpw, color = cop)) +
+  stat_qq() +
+  stat_qq_line() +
+  facet_wrap(~cop) +
+  theme_classic() +
+  labs(title = "Q-Q Plot for FPW by Copulation Status")
+
+
+# ---------- Forewing patch length ---------------
+# Histogram
+male_CS %>%
+  ggplot(aes(x = fpl, fill = cop)) +
+  geom_histogram(alpha = 0.6, bins = 15, position = "identity") +
+  facet_wrap(~cop) +
+  theme_classic() +
+  labs(title = "Distribution of FPL by Copulation Status")
+
+# Q-Q Plot
+male_CS %>%
+  ggplot(aes(sample = fpl, color = cop)) +
+  stat_qq() +
+  stat_qq_line() +
+  facet_wrap(~cop) +
+  theme_classic() +
+  labs(title = "Q-Q Plot for FPL by Copulation Status")
+
+# ANOVA for FPL
+anova_fpl <- lm(fpl ~ as.factor(cop), data = male_CS)
+anova(anova_fpl)
+summary(anova_fpl)
+
+# ANOVA for FPW
+anova_fpw <- lm(fpw ~ as.factor(cop), data = male_CS)
+anova(anova_fpw)
+summary(anova_fpw)
+
+# Boxplot for FPL
+ggplot(male_CS, aes(x = as.factor(cop), y = fpl)) +
+  geom_boxplot() +
+  labs(x = "Copulation Status", y = "Forewing Patch Length (FPL)") +
+  theme_classic()
+
+# Boxplot for FPW
+ggplot(male_CS, aes(x = as.factor(cop), y = fpw)) +
+  geom_boxplot() +
+  labs(x = "Copulation Status", y = "Forewing Patch Width (FPW)") +
+  theme_classic()
+
+```
+
+### Results of Sexual Traits and Copulation Status
+
+**Response Variables and Predictor Variables:**
+
+- Response Variables: 
+
+  - FPL (Forewing Patch Length): Continuous variable (unit: mm)
+  - FPW (Forewing Patch Width): Continuous varibale (unit: mm)
+- Predictor Variable:
+
+  - Copulation Status (cop): Categorical variables with two levels:
+    - 0: Individual was always found without a partner.
+    - 1: Individual was found mating with partner at least once.
+
+#### Analysis 1: Copulation Status ~ FPL
+**Variance Explained by the Model** 
+
+From the ANOVA table:
+
+- Sum of Squares (SS):
+
+  - Copulation Status: 0.924.
+  - Residual: 5937.2.
+  
+Total SS = 0.924+5937.2=5938.124.
+
+$R^2 = \frac{\text{SS(Copulation Status)}}{\text{Total SS}} = \frac{0.924}{5938.124} \approx 0.00016$.
+This is consistent with the $R^2 = 0.0001556$ from the model summary.
+
+Parameter Estimate and Percentage Difference:
+
+- Estimate for Copulation Status (1): 0.05961
+  
+  - Reference group mean ($mean_{cop=0}$): 16.658 mm.
+  - Percentage Difference = $\frac{0.05961}{16.658} \times 100 \approx 0.36 \%$.
+
+- Group Means and Standard Errors:
+
+  - $mean_{cop=0} = 16.658 \pm 0.041mm$
+  - $mean_{cop=1} = 16.718 \pm 0.041mm$
+
+**Percentage Difference Based on Group Means**
+
+$\text{Percentage Difference} = \frac{mean_{cop=1}-mean_{cop=0}}{mean_{cop=0}}\times100 = \frac{16.718-16.658}{16.658}\times100 \approx 0.36 \%$
+
+**F-Statistic and P-values**
+
+F-statistic: 0.316
+p-value: 0.5739
+
+This indicates no significant difference in FPL across copulation statuses.
+
+#### Analysis 2: Copulation Status ~ FPW
+**Variance Explained by the Model** 
+
+From the ANOVA table:
+
+- Sum of Squares (SS):
+
+  - Copulation Status: 3.76.
+  - Residual: 336.49
+  
+Total SS = 3.76+336.49=340.25.
+
+$R^2 = \frac{\text{SS(Copulation Status)}}{\text{Total SS}} = \frac{3.76}{340.25} \approx 0.01104$.
+This is consistent with the $R^2 = 0.01104$ from the model summary.
+
+Parameter Estimate and Percentage Difference:
+
+- Estimate for Copulation Status (1): -0.12018.
+  
+  - Reference group mean ($mean_{cop=0}$): 9.585 mm.
+  - Percentage Difference = $\frac{-0.12018}{9.585} \times 100 \approx -1.25 \%$.
+
+- Group Means and Standard Errors:
+
+  - $mean_{cop=0} = 9.585 \pm 0.010mm$
+  - $mean_{cop=1} = 9.465 \pm 0.010mm$
+
+**Percentage Difference Based on Group Means**
+
+$\text{Percentage Difference} = \frac{mean_{cop=1}-mean_{cop=0}}{mean_{cop=0}}\times100 = \frac{9.465-9.585}{9.585}\times100 \approx -1.25 \%$
+
+**F-Statistic and P-values**
+
+F-statistic: 22.69
+p-value: $2.04 \times 10^{-6}$
+
+This indicates a significant difference in FPW across copulation statuses.
+
+**Summary and Interpretation**:
+
+- For FPL, the variance explained by the model ($R^2 = 0.00016$) is negligible, with no significant difference between groups ($p=0.5739$).
+- For FPW, the model explains 1.1% of the variance ($R^2 = 0.01104$), and the difference between groups is statistically significant ($p = 2.04 \times 10^{-6}$).
+- Individuals found mating (cop=1) have slightly smaller FPW, with a 1.25% reduction compared to individuals always found without a partner (cop=0).
+
+
+## Analysis 2: Comparative Predictive Models
+### Logistic Regression Analysis
+- **Model Suite**:
+  1. Single-predictor model: Copulation status ~ FPL
+  2. Single-predictor model: Copulation status ~ FPW
+  3. Combined model: Copulation status ~ FPL + FPW
+  4. Interaction model: Copulation status ~ FPL + FPW + (FPL × FPW)
+- **Model Selection**: Evaluate using:
+  - Akaike Information Criterion (AIC)
+  - Bayesian Information Criterion (BIC)
+  - Likelihood ratio tests
+  
+```{r}
+# Clear the environment
+rm(list = ls())
+# Read the data and filter accordingly
+male_CS = read.csv("../data/male_CS.csv")
+male_CS = male_CS %>% 
+  select(fpl,fpw,cop) %>% 
+  mutate(cop = as.factor(cop))
+
+logit_model_fpl = glm(cop ~ fpl, data = male_CS, family = binomial(link = "logit"))
+summary(logit_model_fpl)
+logit_model_fpw = glm(cop ~ fpw, data = male_CS, family = binomial(link = "logit"))
+summary(logit_model_fpw)
+logit_model_fpl_fpw = glm(cop ~ fpw + fpl, data = male_CS, family = binomial(link = "logit"))
+summary(logit_model_fpl_fpw)
+logit_model_interaction = glm(cop ~ fpw+fpl + (fpw*fpl), data = male_CS, family = binomial(link = "logit"))
+summary(logit_model_interaction)
+
+male_CS = male_CS %>% 
+  mutate(predicted_prob_fpl = predict(logit_model_fpl, type = "response")) %>% 
+  mutate(predicted_prob_fpw = predict(logit_model_fpw, type = "response")) %>% 
+  mutate(predicted_prob_fpl_fpw = predict(logit_model_fpl_fpw, type = "response")) %>% 
+  mutate(predicted_prob_interaction = predict(logit_model_interaction, type = "response"))
+
+male_CS = male_CS %>% 
+  mutate(predicted_class_fpl = ifelse(predicted_prob_fpl > 0.5, 1, 0)) %>%
+  mutate(predicted_class_fpw = ifelse(predicted_prob_fpw > 0.5, 1, 0)) %>%
+  mutate(predicted_class_fpl_fpw = ifelse(predicted_prob_fpl_fpw > 0.5, 1, 0)) %>%
+  mutate(predicted_class_interaction = ifelse(predicted_prob_interaction > 0.5, 1, 0)) 
+
+```
+
+
+## Analysis 3: Morphological Trait Assessment
+### Comprehensive Logistic Regression
+- **Preliminary Steps**:
+  1. Address multicollinearity:
+     - Calculate Variance Inflation Factors (VIF)
+     - Remove redundant predictors
+  2. Standardize continuous variables
+- **Model Development**:
+  - Implement stepwise selection (forward/backward)
+  - Explore key trait interactions
+- **Model Validation**:
+  - Calculate McFadden's pseudo R²
+  - Generate confusion matrix
+  - Plot ROC curve
+
+```{r}
+# Clear the environment
+rm(list = ls())
+
+# Import libraries
+library(car)
+
+# Read the data and filter accordingly
+male_CS = read.csv("../data/male_CS.csv")
+male_CS = male_CS %>% 
+  select(tbl, abl, thorl,thorw,fwl,hwl,cop) %>% 
+  mutate(cop = as.factor(cop))
+
+# Calculate VIF: VIF > 5 or 10: Indicates multicollinearity; consider removing the variable.
+# Fit an initial logistic regression model
+initial_model <- glm(cop ~ tbl + abl + thorl + thorw + fwl, data = male_CS, family = binomial) # Removed hwl (hind wing length) as that had the largest value.
+                     
+
+# Calculate VIF
+vif(initial_model)
+
+# Stepwise selection
+final_model = step(glm(cop ~ tbl + abl + thorl + thorw + fwl, 
+                        data = male_CS, family = binomial),
+                    direction = "both")
+summary(final_model)
+
+# Step 3: Add interaction terms
+interaction_model <- glm(cop ~ (thorl * thorw) + fwl + tbl, 
+                         data = male_CS, family = binomial)
+summary(interaction_model)
+
+# Confusion Matrix
+male_CS <- male_CS %>%
+  mutate(predicted_prob = predict(interaction_model, type = "response"),
+         predicted_class = ifelse(predicted_prob > 0.5, 1, 0))
+```
+
+## Analysis 4: Trait Category Comparison
+### Comparative Model Analysis
+- **Model Categories**:
+  1. Morphological: Copulation status ~ (thorl * thorw) + fwl + tbl
+  2. Sexual: Copulation status ~ fpw + fpl
+  3. Comprehensive: Copulation status ~ fpw + fpl + (thorl * thorw) + fwl + tbl
+
+```{r}
+rm(list = ls())
+
+# Read the data and filter accordingly
+male_CS = read.csv("../data/male_CS.csv")
+male_CS = male_CS %>% 
+  mutate(cop = as.factor(cop))
+
+# Logistic regression model
+comprehensive_model <- glm(cop ~ fpw + fpl + thorl * thorw + fwl + tbl, 
+                           data = male_CS, family = binomial)
+
+# Summary of the model
+summary(comprehensive_model)
+
+```
+
+
+
