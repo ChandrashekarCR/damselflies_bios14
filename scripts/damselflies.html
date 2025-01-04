@@ -356,7 +356,6 @@ display: none;
 </div>
 
 
-<p>Date: 01-01-2025</p>
 <div id="read-the-data" class="section level1">
 <h1>Read the data</h1>
 <p>The data originates from a field monitoring project conducted in
@@ -427,6 +426,7 @@ library(patchwork)</code></pre>
 ## 
 ##     area</code></pre>
 <pre class="r"><code>library(dplyr)
+library(MuMIn)
 
 # Load the data
 male_CS = read.csv(&quot;../data/male_CS.csv&quot;)
@@ -451,7 +451,6 @@ head(data)</code></pre>
 ## 4 29.11 16.21 9.81
 ## 5 30.24 16.52 9.79
 ## 6 28.00 15.40 9.10</code></pre>
-<p>Date: 02-01-2025</p>
 <p>Following a thorough literature survey, I identified several relevant
 papers examining variations in wing pigmentation, wing traits, and other
 morphological traits. I intend to conduct a comparative analysis to
@@ -669,7 +668,7 @@ summary.</p>
 </ul></li>
 </ul>
 <p><strong>Percentage Difference Based on Group Means</strong></p>
-<p><span class="math inline">\(\text{Percentage DIfference} =
+<p><span class="math inline">\(\text{Percentage Difference} =
 \frac{mean_{cop=1}-mean_{cop=0}}{mean_{cop=0}}\times100 =
 \frac{16.718-16.658}{16.658}\times100 \approx 0.36 \%\)</span></p>
 <p><strong>F-Statistic and P-values</strong></p>
@@ -709,7 +708,7 @@ Status)}}{\text{Total SS}} = \frac{3.76}{340.25} \approx
 </ul></li>
 </ul>
 <p><strong>Percentage Difference Based on Group Means</strong></p>
-<p><span class="math inline">\(\text{Percentage DIfference} =
+<p><span class="math inline">\(\text{Percentage Difference} =
 \frac{mean_{cop=1}-mean_{cop=0}}{mean_{cop=0}}\times100 =
 \frac{9.465-9.585}{9.585}\times100 \approx -1.25 \%\)</span></p>
 <p><strong>F-Statistic and P-values</strong></p>
@@ -751,12 +750,18 @@ between groups is statistically significant (<span class="math inline">\(p = 2.0
 </ul>
 <pre class="r"><code># Clear the environment
 rm(list = ls())
+
 # Read the data and filter accordingly
 male_CS = read.csv(&quot;../data/male_CS.csv&quot;)
+
+# Selects only the columns fpl, fpw, and cop from the dataset.
+# Converts the `cop` variable (copulation status) into a categorical variable (factor).
 male_CS = male_CS %&gt;% 
-  select(fpl,fpw,cop) %&gt;% 
+  select(fpl, fpw, cop) %&gt;% 
   mutate(cop = as.factor(cop))
 
+
+# Logistic regression model: Copulation status as a function of forewing patch length (fpl)
 logit_model_fpl = glm(cop ~ fpl, data = male_CS, family = binomial(link = &quot;logit&quot;))
 summary(logit_model_fpl)</code></pre>
 <pre><code>## 
@@ -777,7 +782,8 @@ summary(logit_model_fpl)</code></pre>
 ## AIC: 1726.7
 ## 
 ## Number of Fisher Scoring iterations: 4</code></pre>
-<pre class="r"><code>logit_model_fpw = glm(cop ~ fpw, data = male_CS, family = binomial(link = &quot;logit&quot;))
+<pre class="r"><code># Logistic regression model: Copulation status as a function of forewing patch width (fpw)
+logit_model_fpw = glm(cop ~ fpw, data = male_CS, family = binomial(link = &quot;logit&quot;))
 summary(logit_model_fpw)</code></pre>
 <pre><code>## 
 ## Call:
@@ -797,7 +803,8 @@ summary(logit_model_fpw)</code></pre>
 ## AIC: 1705.6
 ## 
 ## Number of Fisher Scoring iterations: 4</code></pre>
-<pre class="r"><code>logit_model_fpl_fpw = glm(cop ~ fpw + fpl, data = male_CS, family = binomial(link = &quot;logit&quot;))
+<pre class="r"><code># Logistic regression model: Copulation status as a function of both fpl and fpw
+logit_model_fpl_fpw = glm(cop ~ fpw + fpl, data = male_CS, family = binomial(link = &quot;logit&quot;))
 summary(logit_model_fpl_fpw)</code></pre>
 <pre><code>## 
 ## Call:
@@ -819,8 +826,9 @@ summary(logit_model_fpl_fpw)</code></pre>
 ## AIC: 1700.8
 ## 
 ## Number of Fisher Scoring iterations: 4</code></pre>
-<pre class="r"><code>logit_model_interaction = glm(cop ~ fpw+fpl + (fpw*fpl), data = male_CS, family = binomial(link = &quot;logit&quot;))
-summary(logit_model_interaction)</code></pre>
+<pre class="r"><code># Logistic regression model: Copulation status with interaction between fpw and fpl
+logit_model_interaction = glm(cop ~ fpw + fpl + (fpw * fpl), data = male_CS, family = binomial(link = &quot;logit&quot;))
+summary(logit_model_interaction) # Only the interaction term (fpw*fpl) also gave the AIC score as this model.</code></pre>
 <pre><code>## 
 ## Call:
 ## glm(formula = cop ~ fpw + fpl + (fpw * fpl), family = binomial(link = &quot;logit&quot;), 
@@ -840,17 +848,101 @@ summary(logit_model_interaction)</code></pre>
 ## AIC: 1702.8
 ## 
 ## Number of Fisher Scoring iterations: 4</code></pre>
-<pre class="r"><code>male_CS = male_CS %&gt;% 
-  mutate(predicted_prob_fpl = predict(logit_model_fpl, type = &quot;response&quot;)) %&gt;% 
-  mutate(predicted_prob_fpw = predict(logit_model_fpw, type = &quot;response&quot;)) %&gt;% 
-  mutate(predicted_prob_fpl_fpw = predict(logit_model_fpl_fpw, type = &quot;response&quot;)) %&gt;% 
-  mutate(predicted_prob_interaction = predict(logit_model_interaction, type = &quot;response&quot;))
+<pre class="r"><code># Predict probabilities for each logistic regression model
+# Adds new columns to the dataset with predicted probabilities (`type = &quot;response&quot;`) from each model:
+#male_CS = male_CS %&gt;% 
+#  mutate(predicted_prob_fpl = predict(logit_model_fpl, type = &quot;response&quot;)) %&gt;% 
+#  mutate(predicted_prob_fpw = predict(logit_model_fpw, type = &quot;response&quot;)) %&gt;% 
+#  mutate(predicted_prob_fpl_fpw = predict(logit_model_fpl_fpw, type = &quot;response&quot;)) %&gt;% 
+#  mutate(predicted_prob_interaction = predict(logit_model_interaction, type = &quot;response&quot;))
 
-male_CS = male_CS %&gt;% 
-  mutate(predicted_class_fpl = ifelse(predicted_prob_fpl &gt; 0.5, 1, 0)) %&gt;%
-  mutate(predicted_class_fpw = ifelse(predicted_prob_fpw &gt; 0.5, 1, 0)) %&gt;%
-  mutate(predicted_class_fpl_fpw = ifelse(predicted_prob_fpl_fpw &gt; 0.5, 1, 0)) %&gt;%
-  mutate(predicted_class_interaction = ifelse(predicted_prob_interaction &gt; 0.5, 1, 0)) </code></pre>
+# Assign predicted classes based on probability thresholds (0.5 as cutoff)
+# Assigns a class of 1 if the predicted probability &gt; 0.5, otherwise 0.
+
+#male_CS = male_CS %&gt;% 
+#  mutate(predicted_class_fpl = ifelse(predicted_prob_fpl &gt; 0.5, 1, 0)) %&gt;%
+#  mutate(predicted_class_fpw = ifelse(predicted_prob_fpw &gt; 0.5, 1, 0)) %&gt;%
+#  mutate(predicted_class_fpl_fpw = ifelse(predicted_prob_fpl_fpw &gt; 0.5, 1, 0)) %&gt;%
+#  mutate(predicted_class_interaction = ifelse(predicted_prob_interaction &gt; 0.5, 1, 0)) 
+
+# Pseudo R-squared (using MuMIn)
+r.squaredGLMM(logit_model_fpl_fpw)</code></pre>
+<pre><code>## Warning: the null model is only correct if all the variables it uses are identical 
+## to those used in fitting the original model.</code></pre>
+<pre><code>##                    R2m        R2c
+## theoretical 0.02901281 0.02901281
+## delta       0.01240287 0.01240287</code></pre>
+<pre class="r"><code># Tjur&#39;s D
+y_hat = predict(logit_model_fpl_fpw, type = &quot;response&quot;) # Get predicted probabilities
+
+tjur_d = mean(y_hat[male_CS$cop == 1]) - mean(y_hat[male_CS$cop == 0])
+tjur_d</code></pre>
+<pre><code>## [1] 0.01435361</code></pre>
+<p>Model Summary and Coefficients:</p>
+<ul>
+<li>Intercept (4.54030): This represents the log-odds of copulation when
+both FPW (forewing patch width) and FPL (forewing patch length) are
+zero. Biologically, this is not meaningful because a wing patch cannot
+have a size of zero. It’s a mathematical necessity for the model but
+doesn’t have a direct biological interpretation.</li>
+<li>FPW (-0.83821, p &lt; 0.001): This is a statistically significant
+negative relationship. On the log-odds scale, for every 1 mm increase in
+FPW, the log-odds of copulation decrease by 0.838. To interpret this on
+the odds scale, we exponentiate: exp(-0.83821) ≈ 0.432. This means that
+for each 1 mm increase in FPW, the odds of copulation are multiplied by
+0.432, or decrease by approximately 56.8% (1 - 0.432). Biologically,
+this suggests that individuals with wider forewing patches are less
+likely to be observed copulating.</li>
+<li>FPL (0.10284, p &lt; 0.01): This is a statistically significant
+positive relationship. On the log-odds scale, for every 1 mm increase in
+FPL, the log-odds of copulation increase by 0.103. Exponentiating gives
+exp(0.10284) ≈ 1.108. So, for each 1 mm increase in FPL, the odds of
+copulation are multiplied by 1.108, or increase by approximately 10.8%.
+Biologically, this suggests that individuals with longer forewing
+patches are slightly more likely to be observed copulating.</li>
+</ul>
+<p>Pseudo R² (R2m = 0.029, R2c = 0.029):</p>
+<p>Since you do not have random effects in the model, the marginal R²
+(R2m) and conditional R² (R2c) are the same. A value of 0.029 means that
+your model (FPW and FPL) explains only about 2.9% of the variance in
+copulation status. This is a very low value, indicating that other
+factors not included in your model are likely much more influential in
+determining whether an individual is observed copulating.</p>
+<p>Tjur’s D (0.014):</p>
+<p>Tjur’s D is 0.014. This indicates that the average predicted
+probability of copulation for individuals observed copulating is only
+1.4% higher than the average predicted probability for individuals not
+observed copulating. This is a very small difference, suggesting that
+the model has weak discriminatory power between the two groups
+(copulating vs. not copulating).</p>
+<p>Overall Biological Interpretation:</p>
+<p>Your model suggests that forewing patch width (FPW) has a
+statistically significant, moderate negative effect on the odds of
+observed copulation, while forewing patch length (FPL) has a
+statistically significant, but weak positive effect. However, the model
+explains very little of the variation in copulation status (only 2.9%),
+and the model’s ability to discriminate between copulating and
+non-copulating individuals is also very weak (Tjur’s D = 0.014).</p>
+<p>Important Considerations:</p>
+<ul>
+<li>Low Explanatory Power: The low R² and Tjur’s D suggest that other
+unmeasured factors (e.g., age, individual behavior, environmental
+conditions, presence of competitors, female choice) are much more
+important in determining copulation success than FPW and FPL alone.</li>
+<li>Focus on Odds Ratios: While the changes in odds are statistically
+significant, the small effect sizes (especially for FPL) mean that the
+biological relevance of these effects might be limited. It is important
+to emphasize the small effect sizes when reporting these results.</li>
+<li>Further Investigation: This analysis suggests that further research
+is needed to identify the key factors driving copulation success in this
+species. Consider including other potentially relevant variables in
+future studies.</li>
+</ul>
+<p>In summary, while the model shows statistically significant effects
+of FPW and FPL on the odds of copulation, the very low R² and Tjur’s D
+emphasize that these measurements alone have very limited predictive
+power. Further investigation is needed to identify the major drivers of
+copulation success.</p>
 </div>
 </div>
 <div id="analysis-3-morphological-trait-assessment" class="section level2">
@@ -901,8 +993,8 @@ male_CS = male_CS %&gt;%
 
 # Calculate VIF: VIF &gt; 5 or 10: Indicates multicollinearity; consider removing the variable.
 # Fit an initial logistic regression model
-initial_model &lt;- glm(cop ~ tbl + abl + thorl + thorw + fwl, # Removed hwl (hind wing length) as that had the largest value.
-                     data = male_CS, family = binomial)
+initial_model &lt;- glm(cop ~ tbl + abl + thorl + thorw + fwl, data = male_CS, family = binomial) # Removed hwl (hind wing length) as that had the largest value.
+                     
 
 # Calculate VIF
 vif(initial_model)</code></pre>
@@ -1010,6 +1102,24 @@ male_CS = male_CS %&gt;%
   mutate(cop = as.factor(cop))
 
 # Logistic regression model
+# Note to self - I have tried all these model to get an AIC score below 1519.9 and it is just not possible -:
+# # Model 1: Simple Main Effects Model (Body Size and Wing Length)
+#model1 &lt;- glm(cop ~ tbl + thorl + thorw + fwl + hwl, data = male_CS, family = binomial)
+# Model 2: Adding Interaction Terms Between Size and Shape
+#model2 &lt;- glm(cop ~ tbl * thorl + thorl * thorw + fwl * hwl + tbl * fwl, data = male_CS, family = binomial)
+# Model 3: Including Lifespan
+#model3 &lt;- glm(cop ~ tbl + thorl + thorw + fwl + lifespan, data = male_CS, family = binomial)
+# Model 4: Combining Forewing Patch Length and Width
+#model4 &lt;- glm(cop ~ tbl + fpl * fpw + thorl + thorw + fwl, data = male_CS, family = binomial)
+# Model 5: Full Model with All Interactions
+#model5 &lt;- glm(cop ~ tbl * abl * thorl * thorw * fwl * hwl * fpl * fpw * lifespan, data = male_CS, family = binomial)
+# Model 6: Size and Shape Focused Model
+#model6 &lt;- glm(cop ~ thorl * thorw + fpl * fpw + tbl + lifespan, data = male_CS, family = binomial)
+# Model 7: Testing the Effects of Individual Wing Dimensions
+#model7 &lt;- glm(cop ~ fwl * fpl + fwl * fpw + hwl + tbl + thorl, data = male_CS, family = binomial)
+# Model 8: Alternative Model with Only Morphological Variables
+#model8 &lt;- glm(cop ~ tbl + thorl * thorw + fwl * hwl + fpl + fpw, data = male_CS, family = binomial)
+
 comprehensive_model &lt;- glm(cop ~ fpw + fpl + thorl * thorw + fwl + tbl, 
                            data = male_CS, family = binomial)
 

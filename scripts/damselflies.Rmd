@@ -4,9 +4,6 @@ author: "Chandrashekar CR"
 date: "01-01-2025"
 output: html_document
 ---
-
-Date: 01-01-2025
-
 # Read the data
 
 The data originates from a field monitoring project conducted in Sweden, focusing on two species of damselflies, Calopteryx splendens and Calopteryx virgo. These damselflies are commonly found in riverine aquatic habitats across Europe. Over five consecutive summers (June and July, 2011–2015), a team of researchers and students conducted repeated visits to study a single population. The dataset includes several morphological traits (linear measurements of the body, abdomen, thorax, and wings), a trait linked to sexual selection (forewing patch length and width, measured only in C. splendens), and two fitness-related variables (copulation status as a proxy for mating success, and lifespan as a proxy for longevity).
@@ -43,6 +40,7 @@ library(tidyverse)
 library(ggplot2)
 library(patchwork)
 library(dplyr)
+library(MuMIn)
 
 # Load the data
 male_CS = read.csv("../data/male_CS.csv")
@@ -54,8 +52,6 @@ data = bind_rows(male_CS, male_CV, female_CS, female_CV)
 
 head(data)
 ```
-
-Date: 02-01-2025
 
 Following a thorough literature survey, I identified several relevant papers examining variations in wing pigmentation, wing traits, and other morphological traits. I intend to conduct a comparative analysis to determine if both morphological and sexual traits contribute to copulation status. This research builds upon the findings of Golab and Brodin's study "Looks or personality: what drives damselfly male mating success in the wild?" (2023), which will serve as a theoretical framework to compare whether my results align with their findings.
 
@@ -262,35 +258,90 @@ This indicates a significant difference in FPW across copulation statuses.
 ```{r}
 # Clear the environment
 rm(list = ls())
+
 # Read the data and filter accordingly
 male_CS = read.csv("../data/male_CS.csv")
+
+# Selects only the columns fpl, fpw, and cop from the dataset.
+# Converts the `cop` variable (copulation status) into a categorical variable (factor).
 male_CS = male_CS %>% 
-  select(fpl,fpw,cop) %>% 
+  select(fpl, fpw, cop) %>% 
   mutate(cop = as.factor(cop))
 
+
+# Logistic regression model: Copulation status as a function of forewing patch length (fpl)
 logit_model_fpl = glm(cop ~ fpl, data = male_CS, family = binomial(link = "logit"))
 summary(logit_model_fpl)
+
+
+# Logistic regression model: Copulation status as a function of forewing patch width (fpw)
 logit_model_fpw = glm(cop ~ fpw, data = male_CS, family = binomial(link = "logit"))
 summary(logit_model_fpw)
+
+# Logistic regression model: Copulation status as a function of both fpl and fpw
 logit_model_fpl_fpw = glm(cop ~ fpw + fpl, data = male_CS, family = binomial(link = "logit"))
 summary(logit_model_fpl_fpw)
-logit_model_interaction = glm(cop ~ fpw+fpl + (fpw*fpl), data = male_CS, family = binomial(link = "logit"))
-summary(logit_model_interaction)
 
-male_CS = male_CS %>% 
-  mutate(predicted_prob_fpl = predict(logit_model_fpl, type = "response")) %>% 
-  mutate(predicted_prob_fpw = predict(logit_model_fpw, type = "response")) %>% 
-  mutate(predicted_prob_fpl_fpw = predict(logit_model_fpl_fpw, type = "response")) %>% 
-  mutate(predicted_prob_interaction = predict(logit_model_interaction, type = "response"))
+# Logistic regression model: Copulation status with interaction between fpw and fpl
+logit_model_interaction = glm(cop ~ fpw + fpl + (fpw * fpl), data = male_CS, family = binomial(link = "logit"))
+summary(logit_model_interaction) # Only the interaction term (fpw*fpl) also gave the AIC score as this model.
 
-male_CS = male_CS %>% 
-  mutate(predicted_class_fpl = ifelse(predicted_prob_fpl > 0.5, 1, 0)) %>%
-  mutate(predicted_class_fpw = ifelse(predicted_prob_fpw > 0.5, 1, 0)) %>%
-  mutate(predicted_class_fpl_fpw = ifelse(predicted_prob_fpl_fpw > 0.5, 1, 0)) %>%
-  mutate(predicted_class_interaction = ifelse(predicted_prob_interaction > 0.5, 1, 0)) 
+
+# Predict probabilities for each logistic regression model
+# Adds new columns to the dataset with predicted probabilities (`type = "response"`) from each model:
+#male_CS = male_CS %>% 
+#  mutate(predicted_prob_fpl = predict(logit_model_fpl, type = "response")) %>% 
+#  mutate(predicted_prob_fpw = predict(logit_model_fpw, type = "response")) %>% 
+#  mutate(predicted_prob_fpl_fpw = predict(logit_model_fpl_fpw, type = "response")) %>% 
+#  mutate(predicted_prob_interaction = predict(logit_model_interaction, type = "response"))
+
+# Assign predicted classes based on probability thresholds (0.5 as cutoff)
+# Assigns a class of 1 if the predicted probability > 0.5, otherwise 0.
+
+#male_CS = male_CS %>% 
+#  mutate(predicted_class_fpl = ifelse(predicted_prob_fpl > 0.5, 1, 0)) %>%
+#  mutate(predicted_class_fpw = ifelse(predicted_prob_fpw > 0.5, 1, 0)) %>%
+#  mutate(predicted_class_fpl_fpw = ifelse(predicted_prob_fpl_fpw > 0.5, 1, 0)) %>%
+#  mutate(predicted_class_interaction = ifelse(predicted_prob_interaction > 0.5, 1, 0)) 
+
+# Pseudo R-squared (using MuMIn)
+r.squaredGLMM(logit_model_fpl_fpw)
+
+# Tjur's D
+y_hat = predict(logit_model_fpl_fpw, type = "response") # Get predicted probabilities
+
+tjur_d = mean(y_hat[male_CS$cop == 1]) - mean(y_hat[male_CS$cop == 0])
+tjur_d
+
 
 ```
 
+
+Model Summary and Coefficients:
+
+- Intercept (4.54030): This represents the log-odds of copulation when both FPW (forewing patch width) and FPL (forewing patch length) are zero. Biologically, this is not meaningful because a wing patch cannot have a size of zero. It's a mathematical necessity for the model but doesn't have a direct biological interpretation.
+- FPW (-0.83821, p < 0.001): This is a statistically significant negative relationship. On the log-odds scale, for every 1 mm increase in FPW, the log-odds of copulation decrease by 0.838. To interpret this on the odds scale, we exponentiate: exp(-0.83821) ≈ 0.432. This means that for each 1 mm increase in FPW, the odds of copulation are multiplied by 0.432, or decrease by approximately 56.8% (1 - 0.432). Biologically, this suggests that individuals with wider forewing patches are less likely to be observed copulating.
+- FPL (0.10284, p < 0.01): This is a statistically significant positive relationship. On the log-odds scale, for every 1 mm increase in FPL, the log-odds of copulation increase by 0.103. Exponentiating gives exp(0.10284) ≈ 1.108. So, for each 1 mm increase in FPL, the odds of copulation are multiplied by 1.108, or increase by approximately 10.8%. Biologically, this suggests that individuals with longer forewing patches are slightly more likely to be observed copulating.
+
+Pseudo R² (R2m = 0.029, R2c = 0.029):
+
+Since you do not have random effects in the model, the marginal R² (R2m) and conditional R² (R2c) are the same. A value of 0.029 means that your model (FPW and FPL) explains only about 2.9% of the variance in copulation status. This is a very low value, indicating that other factors not included in your model are likely much more influential in determining whether an individual is observed copulating.
+
+Tjur's D (0.014):
+
+Tjur's D is 0.014. This indicates that the average predicted probability of copulation for individuals observed copulating is only 1.4% higher than the average predicted probability for individuals not observed copulating. This is a very small difference, suggesting that the model has weak discriminatory power between the two groups (copulating vs. not copulating).
+
+Overall Biological Interpretation:
+
+Your model suggests that forewing patch width (FPW) has a statistically significant, moderate negative effect on the odds of observed copulation, while forewing patch length (FPL) has a statistically significant, but weak positive effect. However, the model explains very little of the variation in copulation status (only 2.9%), and the model's ability to discriminate between copulating and non-copulating individuals is also very weak (Tjur's D = 0.014).
+
+Important Considerations:
+
+- Low Explanatory Power: The low R² and Tjur's D suggest that other unmeasured factors (e.g., age, individual behavior, environmental conditions, presence of competitors, female choice) are much more important in determining copulation success than FPW and FPL alone.
+- Focus on Odds Ratios: While the changes in odds are statistically significant, the small effect sizes (especially for FPL) mean that the biological relevance of these effects might be limited. It is important to emphasize the small effect sizes when reporting these results.
+- Further Investigation: This analysis suggests that further research is needed to identify the key factors driving copulation success in this species. Consider including other potentially relevant variables in future studies.
+
+In summary, while the model shows statistically significant effects of FPW and FPL on the odds of copulation, the very low R² and Tjur's D emphasize that these measurements alone have very limited predictive power. Further investigation is needed to identify the major drivers of copulation success.
 
 ## Analysis 3: Morphological Trait Assessment
 ### Comprehensive Logistic Regression
@@ -343,6 +394,16 @@ summary(interaction_model)
 male_CS <- male_CS %>%
   mutate(predicted_prob = predict(interaction_model, type = "response"),
          predicted_class = ifelse(predicted_prob > 0.5, 1, 0))
+
+
+# Pseudo R-squared (using MuMIn)
+r.squaredGLMM(interaction_model)
+
+# Tjur's D
+y_hat = predict(interaction_model, type = "response") # Get predicted probabilities
+
+tjur_d = mean(y_hat[male_CS$cop == 1]) - mean(y_hat[male_CS$cop == 0])
+tjur_d
 ```
 
 ## Analysis 4: Trait Category Comparison
@@ -361,11 +422,38 @@ male_CS = male_CS %>%
   mutate(cop = as.factor(cop))
 
 # Logistic regression model
+# Note to self - I have tried all these model to get an AIC score below 1519.9 and it is just not possible -:
+# # Model 1: Simple Main Effects Model (Body Size and Wing Length)
+#model1 <- glm(cop ~ tbl + thorl + thorw + fwl + hwl, data = male_CS, family = binomial)
+# Model 2: Adding Interaction Terms Between Size and Shape
+#model2 <- glm(cop ~ tbl * thorl + thorl * thorw + fwl * hwl + tbl * fwl, data = male_CS, family = binomial)
+# Model 3: Including Lifespan
+#model3 <- glm(cop ~ tbl + thorl + thorw + fwl + lifespan, data = male_CS, family = binomial)
+# Model 4: Combining Forewing Patch Length and Width
+#model4 <- glm(cop ~ tbl + fpl * fpw + thorl + thorw + fwl, data = male_CS, family = binomial)
+# Model 5: Full Model with All Interactions
+#model5 <- glm(cop ~ tbl * abl * thorl * thorw * fwl * hwl * fpl * fpw * lifespan, data = male_CS, family = binomial)
+# Model 6: Size and Shape Focused Model
+#model6 <- glm(cop ~ thorl * thorw + fpl * fpw + tbl + lifespan, data = male_CS, family = binomial)
+# Model 7: Testing the Effects of Individual Wing Dimensions
+#model7 <- glm(cop ~ fwl * fpl + fwl * fpw + hwl + tbl + thorl, data = male_CS, family = binomial)
+# Model 8: Alternative Model with Only Morphological Variables
+#model8 <- glm(cop ~ tbl + thorl * thorw + fwl * hwl + fpl + fpw, data = male_CS, family = binomial)
+
 comprehensive_model <- glm(cop ~ fpw + fpl + thorl * thorw + fwl + tbl, 
                            data = male_CS, family = binomial)
 
 # Summary of the model
 summary(comprehensive_model)
+
+# Pseudo R-squared (using MuMIn)
+r.squaredGLMM(comprehensive_model)
+
+# Tjur's D
+y_hat = predict(comprehensive_model, type = "response") # Get predicted probabilities
+
+tjur_d = mean(y_hat[male_CS$cop == 1]) - mean(y_hat[male_CS$cop == 0])
+tjur_d
 
 ```
 
