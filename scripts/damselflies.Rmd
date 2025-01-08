@@ -67,7 +67,6 @@ This systematic approach will allow us to understand both the individual and com
 # Statistical Analysis Plan for Copulation Status Study
 
 ## Analysis 1: Sexual Traits and Copulation Status
-### Primary Analysis: One-way ANOVA
 - **Variables**: Forewing patch length (FPL) and forewing patch width (FPW)
 - **Prerequisites**:
   1. Verify normality within copulation status groups using:
@@ -76,75 +75,212 @@ This systematic approach will allow us to understand both the individual and com
   1. model = lm(x~groups)
 
 ```{r}
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+
 # Clear the environment
 rm(list = ls())
-# Read the data and filter accrodingly
+
+# Read and prepare the data
 male_CS = read.csv("../data/male_CS.csv")
 male_CS = male_CS %>% 
-  select(fpl,fpw,cop) %>% 
+  select(fpl, fpw, cop) %>% 
   mutate(cop = as.factor(cop))
 
 # Verify normality within copulation status groups
-# ---------- Forewing patch width ---------------
+
+# 1. ---------- Forewing Patch Width (FPW) ---------------
+
 # Histogram
-male_CS %>%
+fpw_histogram = male_CS %>%
   ggplot(aes(x = fpw, fill = cop)) +
   geom_histogram(alpha = 0.6, bins = 15, position = "identity") +
   facet_wrap(~cop) +
   theme_classic() +
-  labs(title = "Distribution of FPW by Copulation Status")
+  labs(
+    title = "Distribution of FPW by Copulation Status", 
+    x = "Forewing Patch Width (mm)", 
+    y = "Frequency"
+  ) +
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    plot.title = element_text(size = 16, hjust = 0.5)
+  )
+
+# Save histogram
+ggsave(
+  "../results/fpw_histogram.png",
+  fpw_histogram,
+  width = 200,
+  height = 100,
+  units = "mm",
+  dpi = 600
+)
 
 # Q-Q Plot
-male_CS %>%
+fpw_qq = male_CS %>%
   ggplot(aes(sample = fpw, color = cop)) +
   stat_qq() +
   stat_qq_line() +
   facet_wrap(~cop) +
   theme_classic() +
-  labs(title = "Q-Q Plot for FPW by Copulation Status")
+  labs(
+    title = "Q-Q Plot for FPW by Copulation Status",
+    x = "Theoretical Quantiles",
+    y = "Sample Quantiles"
+  ) +
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    plot.title = element_text(size = 16, hjust = 0.5),
+    legend.position = "none"
+  )
 
+# Save Q-Q plot
+ggsave(
+  "../results/fpw_qq.png",
+  fpw_qq,
+  width = 200,
+  height = 100,
+  units = "mm",
+  dpi = 600
+)
 
-# ---------- Forewing patch length ---------------
+# 2. ---------- Forewing Patch Length (FPL) ---------------
+
 # Histogram
-male_CS %>%
+fpl_histogram = male_CS %>%
   ggplot(aes(x = fpl, fill = cop)) +
   geom_histogram(alpha = 0.6, bins = 15, position = "identity") +
   facet_wrap(~cop) +
   theme_classic() +
-  labs(title = "Distribution of FPL by Copulation Status")
+  labs(
+    title = "Distribution of FPL by Copulation Status",
+    x = "Forewing Patch Length (mm)",
+    y = "Frequency"
+  ) +
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    plot.title = element_text(size = 16, hjust = 0.5)
+  )
+
+# Save histogram
+ggsave(
+  "../results/fpl_histogram.png",
+  fpl_histogram,
+  width = 200,
+  height = 100,
+  units = "mm",
+  dpi = 600
+)
 
 # Q-Q Plot
-male_CS %>%
+fpl_qq = male_CS %>%
   ggplot(aes(sample = fpl, color = cop)) +
   stat_qq() +
   stat_qq_line() +
   facet_wrap(~cop) +
   theme_classic() +
-  labs(title = "Q-Q Plot for FPL by Copulation Status")
+  labs(
+    title = "Q-Q Plot for FPL by Copulation Status",
+    x = "Theoretical Quantiles",
+    y = "Sample Quantiles"
+  ) +
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    plot.title = element_text(size = 16, hjust = 0.5),
+    legend.position = "none"
+  )
 
-# ANOVA for FPL
-anova_fpl <- lm(fpl ~ as.factor(cop), data = male_CS)
-anova(anova_fpl)
-summary(anova_fpl)
+# Save Q-Q plot
+ggsave(
+  "../results/fpl_qq.png",
+  fpl_qq,
+  width = 200,
+  height = 100,
+  units = "mm",
+  dpi = 600
+)
 
-# ANOVA for FPW
-anova_fpw <- lm(fpw ~ as.factor(cop), data = male_CS)
-anova(anova_fpw)
-summary(anova_fpw)
+# Perform ANOVA for FPL
+anova_fpl = lm(fpl ~ as.factor(cop), data = male_CS)
+anova_result_fpl = anova(anova_fpl)
+summary_fpl = summary(anova_fpl)
 
-# Boxplot for FPL
-ggplot(male_CS, aes(x = as.factor(cop), y = fpl)) +
-  geom_boxplot() +
-  labs(x = "Copulation Status", y = "Forewing Patch Length (FPL)") +
-  theme_classic()
+# Perform ANOVA for FPW
+anova_fpw = lm(fpw ~ as.factor(cop), data = male_CS)
+anova_result_fpw = anova(anova_fpw)
+summary_fpw = summary(anova_fpw)
 
-# Boxplot for FPW
-ggplot(male_CS, aes(x = as.factor(cop), y = fpw)) +
-  geom_boxplot() +
-  labs(x = "Copulation Status", y = "Forewing Patch Width (FPW)") +
-  theme_classic()
+# Print ANOVA results
+print(anova_result_fpl)
+print(summary_fpl)
+print(anova_result_fpw)
+print(summary_fpw)
 
 ```
+```{r}
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+library(patchwork)
+
+# Read and prepare data
+male_CS = read.csv("../data/male_CS.csv")
+male_CS = male_CS %>% 
+  select(fpl, fpw, cop) %>% 
+  mutate(cop = as.factor(cop))
+
+# Boxplot for FPL
+box_fpl = ggplot(male_CS, aes(x = as.factor(cop), y = fpl)) +
+  geom_boxplot() +
+  labs(x = "Copulation Status", y = "Forewing Patch Length (fpl (mm))") +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(size = 12),  # Adjusted size of x-axis tick labels
+    axis.text.y = element_text(size = 12),  # Adjusted size of y-axis tick labels
+    axis.title = element_text(size = 14),   # Adjusted axis titles
+    plot.title = element_text(size = 16, hjust = 0.5)  # Adjusted plot title
+  )
+
+# Boxplot for FPW
+box_fpw = ggplot(male_CS, aes(x = as.factor(cop), y = fpw)) +
+  geom_boxplot() +
+  labs(x = "Copulation Status", y = "Forewing Patch Width (fpw (mm))") +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(size = 12),  # Adjusted size of x-axis tick labels
+    axis.text.y = element_text(size = 12),  # Adjusted size of y-axis tick labels
+    axis.title = element_text(size = 14),   # Adjusted axis titles
+    plot.title = element_text(size = 16, hjust = 0.5)  # Adjusted plot title
+  )
+
+# Combine plots side by side using patchwork
+combined_plots = box_fpl + box_fpw + plot_layout(ncol = 2) +
+  plot_annotation(
+    title = "Comparison of Forewing Patch Length and Width by Copulation Status", 
+    theme = theme(plot.title = element_text(size = 17, hjust = 0.5))  # Adjusted annotation title
+  )
+
+# Display combined plots
+combined_plots
+
+# Save the plot as a high-resolution PNG for LaTeX document
+ggsave(
+  "../results/anova_combined_plot.png", 
+  combined_plots, 
+  width = 200,  # Width in mm
+  #height = 80,  # Adjusted height to maintain aspect ratio
+  units = "mm", 
+  dpi = 600
+)
+
+```
+
 
 ## Results of Sexual Traits and Copulation Status
 
@@ -160,7 +296,7 @@ ggplot(male_CS, aes(x = as.factor(cop), y = fpw)) +
     - 0: Individual was always found without a partner.
     - 1: Individual was found mating with partner at least once.
 
-#### Analysis 1: Copulation Status ~ FPL
+#### Copulation Status ~ FPL
 **Variance Explained by the Model** 
 
 From the ANOVA table:
@@ -198,7 +334,7 @@ p-value: 0.5739
 
 This indicates no significant difference in FPL across copulation statuses.
 
-#### Analysis 2: Copulation Status ~ FPW
+#### Copulation Status ~ FPW
 **Variance Explained by the Model** 
 
 From the ANOVA table:
@@ -243,8 +379,7 @@ This indicates a significant difference in FPW across copulation statuses.
 - Individuals found mating (cop=1) have slightly smaller FPW, with a 1.25% reduction compared to individuals always found without a partner (cop=0).
 
 
-## Analysis 2: Comparative Predictive Models
-### Logistic Regression Analysis
+## Analysis 2: Sexual Trait Assessments
 - **Model Suite**:
   1. Single-predictor model: Copulation status ~ FPL
   2. Single-predictor model: Copulation status ~ FPW
@@ -283,23 +418,6 @@ logit_model_interaction = glm(cop ~ fpw + fpl + (fpw * fpl), data = male_CS, fam
 #summary(logit_model_interaction) # Only the interaction term (fpw*fpl) also gave the AIC score as this model.
 
 
-# Predict probabilities for each logistic regression model
-# Adds new columns to the dataset with predicted probabilities (`type = "response"`) from each model:
-#male_CS = male_CS %>% 
-#  mutate(predicted_prob_fpl = predict(logit_model_fpl, type = "response")) %>% 
-#  mutate(predicted_prob_fpw = predict(logit_model_fpw, type = "response")) %>% 
-#  mutate(predicted_prob_fpl_fpw = predict(logit_model_fpl_fpw, type = "response")) %>% 
-#  mutate(predicted_prob_interaction = predict(logit_model_interaction, type = "response"))
-
-# Assign predicted classes based on probability thresholds (0.5 as cutoff)
-# Assigns a class of 1 if the predicted probability > 0.5, otherwise 0.
-
-#male_CS = male_CS %>% 
-#  mutate(predicted_class_fpl = ifelse(predicted_prob_fpl > 0.5, 1, 0)) %>%
-#  mutate(predicted_class_fpw = ifelse(predicted_prob_fpw > 0.5, 1, 0)) %>%
-#  mutate(predicted_class_fpl_fpw = ifelse(predicted_prob_fpl_fpw > 0.5, 1, 0)) %>%
-#  mutate(predicted_class_interaction = ifelse(predicted_prob_interaction > 0.5, 1, 0)) 
-
 # Pseudo R-squared (using MuMIn)
 r.squaredGLMM(logit_model_fpl_fpw)
 
@@ -313,19 +431,19 @@ tjur_d
 
 ```{r}
 # Calculate mean and standard deviation of predictors
-fpw_mean <- mean(male_CS$fpw, na.rm = TRUE)
-fpw_sd <- sd(male_CS$fpw, na.rm = TRUE)
-fpl_mean <- mean(male_CS$fpl, na.rm = TRUE)
-fpl_sd <- sd(male_CS$fpl, na.rm = TRUE)
+fpw_mean = mean(male_CS$fpw, na.rm = TRUE)
+fpw_sd = sd(male_CS$fpw, na.rm = TRUE)
+fpl_mean = mean(male_CS$fpl, na.rm = TRUE)
+fpl_sd = sd(male_CS$fpl, na.rm = TRUE)
 
 # Predicted probabilities for fpw and fpl (mean wrt SD)
-fpw_low <- fpw_mean - fpw_sd
-fpw_high <- fpw_mean + fpw_sd
-fpl_low <- fpl_mean - fpl_sd
-fpl_high <- fpl_mean + fpl_sd
+fpw_low = fpw_mean - fpw_sd
+fpw_high = fpw_mean + fpw_sd
+fpl_low = fpl_mean - fpl_sd
+fpl_high = fpl_mean + fpl_sd
 
 # Logistic function for probabilities
-logit_to_prob <- function(log_odds) {
+logit_to_prob = function(log_odds) {
   return(1 / (1 + exp(-log_odds)))
 }
 
@@ -333,16 +451,16 @@ logit_to_prob <- function(log_odds) {
 prob_fpw_fpl_base = logit_to_prob(4.54030 + (-0.83821 * fpw_mean) + (0.10284 * fpl_mean))
 
 # Predicted probabilities for fpw changes
-prob_fpw_low <- logit_to_prob(4.54030 + (-0.83821 * fpw_low) + (0.10284 * fpl_mean))
-prob_fpw_high <- logit_to_prob(4.54030 + (-0.83821 * fpw_high) + (0.10284 * fpl_mean))
+prob_fpw_low = logit_to_prob(4.54030 + (-0.83821 * fpw_low) + (0.10284 * fpl_mean))
+prob_fpw_high = logit_to_prob(4.54030 + (-0.83821 * fpw_high) + (0.10284 * fpl_mean))
 
 # Predicted probabilities for fpl changes
-prob_fpl_low <- logit_to_prob(4.54030 + (-0.83821 * fpw_mean) + (0.10284 * fpl_low))
-prob_fpl_high <- logit_to_prob(4.54030 + (-0.83821 * fpw_mean) + (0.10284 * fpl_high))
+prob_fpl_low = logit_to_prob(4.54030 + (-0.83821 * fpw_mean) + (0.10284 * fpl_low))
+prob_fpl_high = logit_to_prob(4.54030 + (-0.83821 * fpw_mean) + (0.10284 * fpl_high))
 
 # Threshold for P(cop=1)=0.5 for fpw and fpl
-fpw_threshold <- -4.54030 / -0.83821
-fpl_threshold <- -4.54030 / 0.10284
+fpw_threshold = -(4.54030 + (0.10284*fpl_mean))/-0.83821
+fpl_threshold = (-4.54030 + (-0.83821*fpw_mean))/ 0.1028
 
 # Results
 list(
@@ -413,7 +531,6 @@ Our analysis reveals distinct relationships between forewing patch dimensions an
 
 
 ## Analysis 3: Morphological Trait Assessment
-### Comprehensive Logistic Regression
 - **Preliminary Steps**:
   1. Address multicollinearity:
      - Calculate Variance Inflation Factors (VIF)
@@ -424,7 +541,6 @@ Our analysis reveals distinct relationships between forewing patch dimensions an
   - Explore key trait interactions
 - **Model Validation**:
   - Calculate McFadden's pseudo R²
-  - Plot ROC curve
 
 ```{r}
 # Clear the environment
@@ -441,7 +557,7 @@ male_CS = male_CS %>%
 
 # Calculate VIF: VIF > 5 or 10: Indicates multicollinearity; consider removing the variable.
 # Fit an initial logistic regression model
-initial_model <- glm(cop ~ tbl + abl + thorl + thorw + fwl, data = male_CS, family = binomial) # Removed hwl (hind wing length) as that had the largest value.
+initial_model = glm(cop ~ tbl + abl + thorl + thorw + fwl, data = male_CS, family = binomial) # Removed hwl (hind wing length) as that had the largest value.
                      
 
 # Calculate VIF
@@ -454,12 +570,12 @@ final_model = step(glm(cop ~ tbl + abl + thorl + thorw + fwl,
 #summary(final_model) The interaction model has a better AIC score. So we will analyze only that.
 
 # Step 3: Add interaction terms
-interaction_model <- glm(cop ~ (thorl * thorw) + fwl + tbl, 
+interaction_model = glm(cop ~ (thorl * thorw) + fwl + tbl, 
                          data = male_CS, family = binomial)
 summary(interaction_model)
 
 # Confusion Matrix
-male_CS <- male_CS %>%
+male_CS = male_CS %>%
   mutate(predicted_prob = predict(interaction_model, type = "response"),
          predicted_class = ifelse(predicted_prob > 0.5, 1, 0))
 
@@ -482,31 +598,31 @@ rm(list = ls())
 library(dplyr)
 
 # Read the data and filter
-male_CS <- read.csv("../data/male_CS.csv") %>%
+male_CS = read.csv("../data/male_CS.csv") %>%
   select(tbl, abl, thorl, thorw, fwl, hwl, cop) %>%
   mutate(cop = as.factor(cop))
 
 # Interaction model
-interaction_model <- glm(cop ~ (thorl * thorw) + fwl + tbl, 
+interaction_model = glm(cop ~ (thorl * thorw) + fwl + tbl, 
                          data = male_CS, family = binomial)
 
 # Mean and standard deviation of predictors
-thorl_mean <- mean(male_CS$thorl, na.rm = TRUE)
-thorl_sd <- sd(male_CS$thorl, na.rm = TRUE)
-thorw_mean <- mean(male_CS$thorw, na.rm = TRUE)
-thorw_sd <- sd(male_CS$thorw, na.rm = TRUE)
-fwl_mean <- mean(male_CS$fwl, na.rm = TRUE)
-fwl_sd <- sd(male_CS$fwl, na.rm = TRUE)
-tbl_mean <- mean(male_CS$tbl, na.rm = TRUE)
-tbl_sd <- sd(male_CS$tbl, na.rm = TRUE)
+thorl_mean = mean(male_CS$thorl, na.rm = TRUE)
+thorl_sd = sd(male_CS$thorl, na.rm = TRUE)
+thorw_mean = mean(male_CS$thorw, na.rm = TRUE)
+thorw_sd = sd(male_CS$thorw, na.rm = TRUE)
+fwl_mean = mean(male_CS$fwl, na.rm = TRUE)
+fwl_sd = sd(male_CS$fwl, na.rm = TRUE)
+tbl_mean = mean(male_CS$tbl, na.rm = TRUE)
+tbl_sd = sd(male_CS$tbl, na.rm = TRUE)
 
 # Define logistic function
-logit_to_prob <- function(log_odds) {
+logit_to_prob = function(log_odds) {
   return(1 / (1 + exp(-log_odds)))
 }
 
 # Base probability
-prob_base <- logit_to_prob(-9.51364 + 
+prob_base = logit_to_prob(-9.51364 + 
                             (1.44451 * thorl_mean) + 
                             (3.29692 * thorw_mean) + 
                             (0.22905 * fwl_mean) + 
@@ -514,14 +630,14 @@ prob_base <- logit_to_prob(-9.51364 +
                             (-0.61031 * thorl_mean * thorw_mean))
 
 # Predicted probabilities for thorl wrt SD
-prob_thorl_low <- logit_to_prob(-9.51364 + 
+prob_thorl_low = logit_to_prob(-9.51364 + 
                                 (1.44451 * (thorl_mean - thorl_sd)) + 
                                 (3.29692 * thorw_mean) + 
                                 (0.22905 * fwl_mean) + 
                                 (-0.16208 * tbl_mean) + 
                                 (-0.61031 * (thorl_mean - thorl_sd) * thorw_mean))
 
-prob_thorl_high <- logit_to_prob(-9.51364 + 
+prob_thorl_high = logit_to_prob(-9.51364 + 
                                  (1.44451 * (thorl_mean + thorl_sd)) + 
                                  (3.29692 * thorw_mean) + 
                                  (0.22905 * fwl_mean) + 
@@ -529,14 +645,14 @@ prob_thorl_high <- logit_to_prob(-9.51364 +
                                  (-0.61031 * (thorl_mean + thorl_sd) * thorw_mean))
 
 # Predicted probabilities for thorw wrt SD
-prob_thorw_low <- logit_to_prob(-9.51364 + 
+prob_thorw_low = logit_to_prob(-9.51364 + 
                                 (1.44451 * thorl_mean) + 
                                 (3.29692 * (thorw_mean - thorw_sd)) + 
                                 (0.22905 * fwl_mean) + 
                                 (-0.16208 * tbl_mean) + 
                                 (-0.61031 * thorl_mean * (thorw_mean - thorw_sd)))
 
-prob_thorw_high <- logit_to_prob(-9.51364 + 
+prob_thorw_high = logit_to_prob(-9.51364 + 
                                  (1.44451 * thorl_mean) + 
                                  (3.29692 * (thorw_mean + thorw_sd)) + 
                                  (0.22905 * fwl_mean) + 
@@ -544,14 +660,14 @@ prob_thorw_high <- logit_to_prob(-9.51364 +
                                  (-0.61031 * thorl_mean * (thorw_mean + thorw_sd)))
 
 # Predicted probabilities for fwl wrt SD
-prob_fwl_low <- logit_to_prob(-9.51364 + 
+prob_fwl_low = logit_to_prob(-9.51364 + 
                                 (1.44451 * thorl_mean) + 
                                 (3.29692 * thorw_mean) + 
                                 (0.22905 * (fwl_mean - fwl_sd)) + 
                                 (-0.16208 * tbl_mean) + 
                                 (-0.61031 * thorl_mean * thorw_mean))
 
-prob_fwl_high <- logit_to_prob(-9.51364 + 
+prob_fwl_high = logit_to_prob(-9.51364 + 
                                 (1.44451 * thorl_mean) + 
                                 (3.29692 * thorw_mean) + 
                                 (0.22905 * (fwl_mean + fwl_sd)) + 
@@ -559,14 +675,14 @@ prob_fwl_high <- logit_to_prob(-9.51364 +
                                 (-0.61031 * thorl_mean * thorw_mean))
 
 # Predicted probabilities for tbl wrt SD
-prob_tbl_low <- logit_to_prob(-9.51364 + 
+prob_tbl_low = logit_to_prob(-9.51364 + 
                                 (1.44451 * thorl_mean) + 
                                 (3.29692 * thorw_mean) + 
                                 (0.22905 * fwl_mean) + 
                                 (-0.16208 * (tbl_mean - tbl_sd)) + 
                                 (-0.61031 * thorl_mean * thorw_mean))
 
-prob_tbl_high <- logit_to_prob(-9.51364 + 
+prob_tbl_high = logit_to_prob(-9.51364 + 
                                 (1.44451 * thorl_mean) + 
                                 (3.29692 * thorw_mean) + 
                                 (0.22905 * fwl_mean) + 
@@ -575,18 +691,18 @@ prob_tbl_high <- logit_to_prob(-9.51364 +
 
 
 # Thresholds for P(cop=1)=0.5
-thorl_threshold <- (-(-9.51364 + (3.29692 * thorw_mean) + 
+thorl_threshold = (-(-9.51364 + (3.29692 * thorw_mean) + 
                      (0.22905 * fwl_mean) + 
                      (-0.16208 * tbl_mean)) / 
                    (1.44451 + (-0.61031 * thorw_mean)))
 
-thorw_threshold <- (-(-9.51364 + (1.44451 * thorl_mean) + 
+thorw_threshold = (-(-9.51364 + (1.44451 * thorl_mean) + 
                      (0.22905 * fwl_mean) + 
                      (-0.16208 * tbl_mean)) / 
                    (3.29692 + (-0.61031 * thorl_mean)))
 
 # Threshold for forewing length (fwl)
-fwl_threshold <- (-(-(-9.51364) + 
+fwl_threshold = (-(-(-9.51364) + 
                     (1.44451 * thorl_mean) + 
                     (3.29692 * thorw_mean) + 
                     (-0.16208 * tbl_mean) + 
@@ -594,7 +710,7 @@ fwl_threshold <- (-(-(-9.51364) +
                   0.22905)
 
 # Threshold for tibia length (tbl)
-tbl_threshold <- (-(-(-9.51364) + 
+tbl_threshold = (-(-(-9.51364) + 
                     (1.44451 * thorl_mean) + 
                     (3.29692 * thorw_mean) + 
                     (0.22905 * fwl_mean) + 
@@ -676,7 +792,6 @@ Since there are no random effects, the marginal and conditional R² are the same
 Tjur's D is 0.119. This indicates that the average predicted probability of copulation for individuals observed copulating is 11.9% higher than the average predicted probability for individuals not observed copulating. This is a higher value than in the previous model, suggesting that this model has better discriminatory power between the two groups.
 
 ## Analysis 4: Trait Category Comparison
-### Comparative Model Analysis
 - **Model Categories**:
   1. Morphological: Copulation status ~ (thorl * thorw) + fwl + tbl
   2. Sexual: Copulation status ~ fpw + fpl
@@ -693,23 +808,23 @@ male_CS = male_CS %>%
 # Logistic regression model
 # Note to self - I have tried all these model to get an AIC score below 1519.9 and it is just not possible -:
 # # Model 1: Simple Main Effects Model (Body Size and Wing Length)
-#model1 <- glm(cop ~ tbl + thorl + thorw + fwl + hwl, data = male_CS, family = binomial)
+#model1 = glm(cop ~ tbl + thorl + thorw + fwl + hwl, data = male_CS, family = binomial)
 # Model 2: Adding Interaction Terms Between Size and Shape
-#model2 <- glm(cop ~ tbl * thorl + thorl * thorw + fwl * hwl + tbl * fwl, data = male_CS, family = binomial)
+#model2 = glm(cop ~ tbl * thorl + thorl * thorw + fwl * hwl + tbl * fwl, data = male_CS, family = binomial)
 # Model 3: Including Lifespan
-#model3 <- glm(cop ~ tbl + thorl + thorw + fwl + lifespan, data = male_CS, family = binomial)
+#model3 = glm(cop ~ tbl + thorl + thorw + fwl + lifespan, data = male_CS, family = binomial)
 # Model 4: Combining Forewing Patch Length and Width
-#model4 <- glm(cop ~ tbl + fpl * fpw + thorl + thorw + fwl, data = male_CS, family = binomial)
+#model4 = glm(cop ~ tbl + fpl * fpw + thorl + thorw + fwl, data = male_CS, family = binomial)
 # Model 5: Full Model with All Interactions
-#model5 <- glm(cop ~ tbl * abl * thorl * thorw * fwl * hwl * fpl * fpw * lifespan, data = male_CS, family = binomial)
+#model5 = glm(cop ~ tbl * abl * thorl * thorw * fwl * hwl * fpl * fpw * lifespan, data = male_CS, family = binomial)
 # Model 6: Size and Shape Focused Model
-#model6 <- glm(cop ~ thorl * thorw + fpl * fpw + tbl + lifespan, data = male_CS, family = binomial)
+#model6 = glm(cop ~ thorl * thorw + fpl * fpw + tbl + lifespan, data = male_CS, family = binomial)
 # Model 7: Testing the Effects of Individual Wing Dimensions
-#model7 <- glm(cop ~ fwl * fpl + fwl * fpw + hwl + tbl + thorl, data = male_CS, family = binomial)
+#model7 = glm(cop ~ fwl * fpl + fwl * fpw + hwl + tbl + thorl, data = male_CS, family = binomial)
 # Model 8: Alternative Model with Only Morphological Variables
-#model8 <- glm(cop ~ tbl + thorl * thorw + fwl * hwl + fpl + fpw, data = male_CS, family = binomial)
+#model8 = glm(cop ~ tbl + thorl * thorw + fwl * hwl + fpl + fpw, data = male_CS, family = binomial)
 
-comprehensive_model <- glm(cop ~ fpw + fpl + (thorl * thorw) + fwl + tbl, 
+comprehensive_model = glm(cop ~ fpw + fpl + (thorl * thorw) + fwl + tbl, 
                            data = male_CS, family = binomial)
 
 # Summary of the model
@@ -739,45 +854,45 @@ library(dplyr)
 
 
 # Read the data and filter
-male_CS <- read.csv("../data/male_CS.csv") %>%
+male_CS = read.csv("../data/male_CS.csv") %>%
   mutate(cop = as.factor(cop))
 
 # Comprehensive Interaction Model
-comprehensive_model <- glm(cop ~ fpw + fpl + (thorl * thorw) + fwl + tbl, 
+comprehensive_model = glm(cop ~ fpw + fpl + (thorl * thorw) + fwl + tbl, 
                            data = male_CS, family = binomial)
 
 # Extract coefficients
-intercept <- -9.9211330
-coef_fpw <- -0.3765803
-coef_fpl <- 0.1691122
-coef_thorl <- 1.5277422
-coef_thorw <- 3.4099390
-coef_fwl <- 0.2536333
-coef_tbl <- -0.1642272
-coef_thorl_thorw <- -0.6260531
+intercept = -9.9211330
+coef_fpw = -0.3765803
+coef_fpl = 0.1691122
+coef_thorl = 1.5277422
+coef_thorw = 3.4099390
+coef_fwl = 0.2536333
+coef_tbl = -0.1642272
+coef_thorl_thorw = -0.6260531
 
 # Mean and standard deviation of predictors
-fpw_mean <- mean(male_CS$fpw, na.rm = TRUE)
-fpl_mean <- mean(male_CS$fpl, na.rm = TRUE)
-thorl_mean <- mean(male_CS$thorl, na.rm = TRUE)
-thorw_mean <- mean(male_CS$thorw, na.rm = TRUE)
-fwl_mean <- mean(male_CS$fwl, na.rm = TRUE)
-tbl_mean <- mean(male_CS$tbl, na.rm = TRUE)
+fpw_mean = mean(male_CS$fpw, na.rm = TRUE)
+fpl_mean = mean(male_CS$fpl, na.rm = TRUE)
+thorl_mean = mean(male_CS$thorl, na.rm = TRUE)
+thorw_mean = mean(male_CS$thorw, na.rm = TRUE)
+fwl_mean = mean(male_CS$fwl, na.rm = TRUE)
+tbl_mean = mean(male_CS$tbl, na.rm = TRUE)
 
-fpw_sd <- sd(male_CS$fpw, na.rm = TRUE)
-fpl_sd <- sd(male_CS$fpl, na.rm = TRUE)
-thorl_sd <- sd(male_CS$thorl, na.rm = TRUE)
-thorw_sd <- sd(male_CS$thorw, na.rm = TRUE)
-fwl_sd <- sd(male_CS$fwl, na.rm = TRUE)
-tbl_sd <- sd(male_CS$tbl, na.rm = TRUE)
+fpw_sd = sd(male_CS$fpw, na.rm = TRUE)
+fpl_sd = sd(male_CS$fpl, na.rm = TRUE)
+thorl_sd = sd(male_CS$thorl, na.rm = TRUE)
+thorw_sd = sd(male_CS$thorw, na.rm = TRUE)
+fwl_sd = sd(male_CS$fwl, na.rm = TRUE)
+tbl_sd = sd(male_CS$tbl, na.rm = TRUE)
 
 # Define logistic function
-logit_to_prob <- function(log_odds) {
+logit_to_prob = function(log_odds) {
   return(1 / (1 + exp(-log_odds)))
 }
 
 # Base probability
-prob_base <- logit_to_prob(intercept + 
+prob_base = logit_to_prob(intercept + 
                             (coef_fpw * fpw_mean) + 
                             (coef_fpl * fpl_mean) + 
                             (coef_thorl * thorl_mean) + 
@@ -787,7 +902,7 @@ prob_base <- logit_to_prob(intercept +
                             (coef_thorl_thorw * thorl_mean * thorw_mean))
 
 # Predicted probabilities for fpw wrt SD
-prob_fpw_low <- logit_to_prob(intercept + 
+prob_fpw_low = logit_to_prob(intercept + 
                                (coef_fpw * (fpw_mean - fpw_sd)) + 
                                (coef_fpl * fpl_mean) + 
                                (coef_thorl * thorl_mean) + 
@@ -796,7 +911,7 @@ prob_fpw_low <- logit_to_prob(intercept +
                                (coef_tbl * tbl_mean) + 
                                (coef_thorl_thorw * thorl_mean * thorw_mean))
 
-prob_fpw_high <- logit_to_prob(intercept + 
+prob_fpw_high = logit_to_prob(intercept + 
                                 (coef_fpw * (fpw_mean + fpw_sd)) + 
                                 (coef_fpl * fpl_mean) + 
                                 (coef_thorl * thorl_mean) + 
@@ -806,7 +921,7 @@ prob_fpw_high <- logit_to_prob(intercept +
                                 (coef_thorl_thorw * thorl_mean * thorw_mean))
 
 # Predicted probabilities for fpl wrt SD
-prob_fpl_low <- logit_to_prob(intercept + 
+prob_fpl_low = logit_to_prob(intercept + 
                                (coef_fpw * fpw_mean) + 
                                (coef_fpl * (fpl_mean - fpl_sd)) + 
                                (coef_thorl * thorl_mean) + 
@@ -815,7 +930,7 @@ prob_fpl_low <- logit_to_prob(intercept +
                                (coef_tbl * tbl_mean) + 
                                (coef_thorl_thorw * thorl_mean * thorw_mean))
 
-prob_fpl_high <- logit_to_prob(intercept + 
+prob_fpl_high = logit_to_prob(intercept + 
                                 (coef_fpw * fpw_mean) + 
                                 (coef_fpl * (fpl_mean + fpl_sd)) + 
                                 (coef_thorl * thorl_mean) + 
@@ -825,7 +940,7 @@ prob_fpl_high <- logit_to_prob(intercept +
                                 (coef_thorl_thorw * thorl_mean * thorw_mean))
 
 # Predicted probabilities for thorl wrt SD
-prob_thorl_low <- logit_to_prob(intercept + 
+prob_thorl_low = logit_to_prob(intercept + 
                                 (coef_fpw * fpw_mean) + 
                                 (coef_fpl * fpl_mean) + 
                                 (coef_thorl * (thorl_mean - thorl_sd)) + 
@@ -834,7 +949,7 @@ prob_thorl_low <- logit_to_prob(intercept +
                                 (coef_tbl * tbl_mean) + 
                                 (coef_thorl_thorw * (thorl_mean - thorl_sd) * thorw_mean))
 
-prob_thorl_high <- logit_to_prob(intercept + 
+prob_thorl_high = logit_to_prob(intercept + 
                                  (coef_fpw * fpw_mean) + 
                                  (coef_fpl * fpl_mean) + 
                                  (coef_thorl * (thorl_mean + thorl_sd)) + 
@@ -844,7 +959,7 @@ prob_thorl_high <- logit_to_prob(intercept +
                                  (coef_thorl_thorw * (thorl_mean + thorl_sd) * thorw_mean))
 
 # Predicted probabilities for thorw wrt SD
-prob_thorw_low <- logit_to_prob(intercept + 
+prob_thorw_low = logit_to_prob(intercept + 
                                 (coef_fpw * fpw_mean) + 
                                 (coef_fpl * fpl_mean) + 
                                 (coef_thorl * thorl_mean) + 
@@ -853,7 +968,7 @@ prob_thorw_low <- logit_to_prob(intercept +
                                 (coef_tbl * tbl_mean) + 
                                 (coef_thorl_thorw * thorl_mean * (thorw_mean - thorw_sd)))
 
-prob_thorw_high <- logit_to_prob(intercept + 
+prob_thorw_high = logit_to_prob(intercept + 
                                  (coef_fpw * fpw_mean) + 
                                  (coef_fpl * fpl_mean) + 
                                  (coef_thorl * thorl_mean) + 
@@ -863,7 +978,7 @@ prob_thorw_high <- logit_to_prob(intercept +
                                  (coef_thorl_thorw * thorl_mean * (thorw_mean + thorw_sd)))
 
 # Predicted probabilities for fwl wrt SD
-prob_fwl_low <- logit_to_prob(intercept + 
+prob_fwl_low = logit_to_prob(intercept + 
                                (coef_fpw * fpw_mean) + 
                                (coef_fpl * fpl_mean) + 
                                (coef_thorl * thorl_mean) + 
@@ -872,7 +987,7 @@ prob_fwl_low <- logit_to_prob(intercept +
                                (coef_tbl * tbl_mean) + 
                                (coef_thorl_thorw * thorl_mean * thorw_mean))
 
-prob_fwl_high <- logit_to_prob(intercept + 
+prob_fwl_high = logit_to_prob(intercept + 
                                 (coef_fpw * fpw_mean) + 
                                 (coef_fpl * fpl_mean) + 
                                 (coef_thorl * thorl_mean) + 
@@ -882,7 +997,7 @@ prob_fwl_high <- logit_to_prob(intercept +
                                 (coef_thorl_thorw * thorl_mean * thorw_mean))
 
 # Predicted probabilities for tbl wrt SD
-prob_tbl_low <- logit_to_prob(intercept + 
+prob_tbl_low = logit_to_prob(intercept + 
                                (coef_fpw * fpw_mean) + 
                                (coef_fpl * fpl_mean) + 
                                (coef_thorl * thorl_mean) + 
@@ -891,7 +1006,7 @@ prob_tbl_low <- logit_to_prob(intercept +
                                (coef_tbl * (tbl_mean - tbl_sd)) + 
                                (coef_thorl_thorw * thorl_mean * thorw_mean))
 
-prob_tbl_high <- logit_to_prob(intercept + 
+prob_tbl_high = logit_to_prob(intercept + 
                                 (coef_fpw * fpw_mean) + 
                                 (coef_fpl * fpl_mean) + 
                                 (coef_thorl * thorl_mean) + 
@@ -902,7 +1017,7 @@ prob_tbl_high <- logit_to_prob(intercept +
 
 
 # Threshold for fpw
-fpw_threshold <- (-(
+fpw_threshold = (-(
   intercept + 
   (coef_fpl * fpl_mean) + 
   (coef_thorl * thorl_mean) + 
@@ -913,7 +1028,7 @@ fpw_threshold <- (-(
 ) / coef_fpw)
 
 # Threshold for fpl
-fpl_threshold <- (-(
+fpl_threshold = (-(
   intercept + 
   (coef_fpw * fpw_mean) + 
   (coef_thorl * thorl_mean) + 
@@ -924,7 +1039,7 @@ fpl_threshold <- (-(
 ) / coef_fpl)
 
 # Threshold for thorl
-thorl_threshold <- (-(
+thorl_threshold = (-(
   intercept + 
   (coef_fpw * fpw_mean) + 
   (coef_fpl * fpl_mean) + 
@@ -934,7 +1049,7 @@ thorl_threshold <- (-(
 ) / (coef_thorl + (coef_thorl_thorw * thorw_mean)))
 
 # Threshold for thorw
-thorw_threshold <- (-(
+thorw_threshold = (-(
   intercept + 
   (coef_fpw * fpw_mean) + 
   (coef_fpl * fpl_mean) + 
@@ -944,7 +1059,7 @@ thorw_threshold <- (-(
 ) / (coef_thorw + (coef_thorl_thorw * thorl_mean)))
 
 # Threshold for fwl
-fwl_threshold <- (-(
+fwl_threshold = (-(
   intercept + 
   (coef_fpw * fpw_mean) + 
   (coef_fpl * fpl_mean) + 
@@ -955,7 +1070,7 @@ fwl_threshold <- (-(
 ) / coef_fwl)
 
 # Threshold for tbl
-tbl_threshold <- (-(
+tbl_threshold = (-(
   intercept + 
   (coef_fpw * fpw_mean) + 
   (coef_fpl * fpl_mean) + 
@@ -1056,7 +1171,232 @@ Since there are no random effects, the marginal and conditional R² are the same
 Tjur's D is 0.128. This indicates that the average predicted probability of copulation for individuals observed copulating is 12.8% higher than the average predicted probability for individuals not observed copulating. This is a higher value than in the previous model, suggesting that this model has better discriminatory power between the two groups.
 
 
+```{r}
+# Data for plotting predicted probabilities with SD and Base
+plot_data = data.frame(
+  Variable = rep(c("fpw", "fpl", "thorl", "thorw", "fwl", "tbl"), each = 3),
+  Level = rep(c("Below SD", "Base", "Above SD"), times = 6),
+  Probability = c(
+    prob_fpw_low, prob_base, prob_fpw_high,
+    prob_fpl_low, prob_base, prob_fpl_high,
+    prob_thorl_low, prob_base, prob_thorl_high,
+    prob_thorw_low, prob_base, prob_thorw_high,
+    prob_fwl_low, prob_base, prob_fwl_high,
+    prob_tbl_low, prob_base, prob_tbl_high
+  )
+)
+
+# Adjust the order of factor levels to make "Below SD" to the left, and "Above SD" to the right of "Base"
+plot_data$Level = factor(plot_data$Level, levels = c("Below SD", "Base", "Above SD"))
+
+# Create the plot
+plot = ggplot(plot_data, aes(x = Variable, y = Probability, fill = Level)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
+  labs(
+    title = "Predicted Probabilities for Predictor Variables",
+    y = "Probability",
+    x = "Predictor Variable"
+  ) +
+  scale_fill_manual(
+    values = c("Below SD" = "#1f77b4", "Base" = "#f2a900", "Above SD" = "#d62728"),
+    breaks = c("Below SD", "Base", "Above SD"),
+    labels = c("Below SD", "Base", "Above SD")
+  ) +
+  theme_classic() +
+  theme(
+    legend.position = "top",
+    plot.title = element_text(hjust = 0.5, size = 18),
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 16)
+  )
+
+# Display the plot
+print(plot)
+
+# Save the plot as a high-resolution PNG
+ggsave(
+  filename = "../results/predicted_probabilities_plot.png", 
+  plot = plot, 
+  width = 200,  # Width in mm
+  height = 80,  # Adjusted height for document proportions
+  units = "mm",
+  dpi = 600
+)
 
 
+```
 
+```{r}
+# Generate grid of values for thorl and thorw
+thorl_seq = seq(thorl_mean - 2 * thorl_sd, thorl_mean + 2 * thorl_sd, length.out = 50)
+thorw_seq = seq(thorw_mean - 2 * thorw_sd, thorw_mean + 2 * thorw_sd, length.out = 50)
+
+interaction_data = expand.grid(thorl = thorl_seq, thorw = thorw_seq)
+
+# Predict probabilities
+interaction_data$Probability = logit_to_prob(
+  intercept + 
+    coef_thorl * interaction_data$thorl + 
+    coef_thorw * interaction_data$thorw + 
+    coef_thorl_thorw * interaction_data$thorl * interaction_data$thorw +
+    coef_fpw * fpw_mean +
+    coef_fpl * fpl_mean +
+    coef_fwl * fwl_mean +
+    coef_tbl * tbl_mean
+)
+
+# Create contour plot
+contour_plot = ggplot(interaction_data, aes(x = thorl, y = thorw, z = Probability)) +
+  geom_contour_filled() +
+  labs(
+    title = "Effect of thorl and thorw Interaction on Predicted Probabilities",
+    x = "thorl (mm)",
+    y = "thorw (mm)",
+    fill = "Probability"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(hjust = 0.3, size = 16),  # Centered and adjusted title size
+    axis.title = element_text(size = 16),               # Axis title size
+    axis.text = element_text(size = 14),                # Axis text size
+    legend.title = element_text(size = 14),             # Legend title size
+    legend.text = element_text(size = 12)               # Legend text size
+  )
+
+# Display the plot
+print(contour_plot)
+
+# Save the plot as a high-resolution PNG
+ggsave(
+  filename = "../results/interaction_contour_plot.png", 
+  plot = contour_plot, 
+  width = 180,  # Width in mm
+  height = 120, # Adjusted height for document proportions
+  units = "mm",
+  dpi = 600
+)
+
+```
+
+
+```{r}
+# Extract coefficients and confidence intervals
+coef_summary = summary(comprehensive_model)$coefficients
+coef_data = data.frame(
+  Term = rownames(coef_summary),
+  Estimate = coef_summary[, "Estimate"],
+  StdError = coef_summary[, "Std. Error"],
+  LowerCI = coef_summary[, "Estimate"] - 1.96 * coef_summary[, "Std. Error"],
+  UpperCI = coef_summary[, "Estimate"] + 1.96 * coef_summary[, "Std. Error"]
+)
+
+# Plot coefficients
+coef_plot = ggplot(coef_data, aes(x = Term, y = Estimate)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = LowerCI, ymax = UpperCI), width = 0.3, color = "#0072B2") +
+  labs(
+    title = "Coefficient Estimates with 95% Confidence Intervals",
+    y = "Estimate",
+    x = "Predictor"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 18),  # Centered and scaled title
+    axis.title = element_text(size = 16),               # Axis title size
+    axis.text = element_text(size = 14),                # Axis text size
+    panel.grid.major = element_line(size = 0.5),        # Adjust grid line thickness
+    panel.grid.minor = element_blank()                  # Hide minor grid lines
+  ) +
+  coord_flip()  # Flip coordinates for better readability
+
+# Display the plot
+print(coef_plot)
+
+# Save the plot as a high-resolution PNG
+ggsave(
+  filename = "../results/coefficients_plot.png", 
+  plot = coef_plot, 
+  width = 200,  # Width in mm for LaTeX integration
+  height = 120, # Adjusted height for readability
+  units = "mm",
+  dpi = 600
+)
+
+
+```
+```{r}
+# Create a dataframe for thresholds
+threshold_data = data.frame(
+  Variable = c("fpw", "fpl", "thorl", "thorw", "fwl", "tbl"),
+  Threshold = c(fpw_threshold, fpl_threshold, thorl_threshold, thorw_threshold, fwl_threshold, tbl_threshold)
+)
+
+# Plot thresholds
+threshold_plot = ggplot(threshold_data, aes(x = Variable, y = Threshold)) +
+  geom_bar(stat = "identity", fill = "lightblue") +
+  labs(
+    title = "Thresholds for Predictor Variables",
+    y = "Threshold Value",
+    x = "Predictor Variable"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 18),  # Centered and scaled title
+    axis.title = element_text(size = 16),               # Axis title size
+    axis.text = element_text(size = 14),                # Axis text size
+    panel.grid.major = element_blank(),        # Adjust grid line thickness
+    panel.grid.minor = element_blank()                  # Hide minor grid lines
+  )
+
+# Display the plot
+print(threshold_plot)
+
+# Save the plot as a high-resolution PNG
+ggsave(
+  filename = "../results/threshold_plot.png", 
+  plot = threshold_plot, 
+  width = 200,  # Width in mm for LaTeX integration
+  height = 120, # Adjusted height for readability
+  units = "mm",
+  dpi = 600
+)
+
+
+```
+
+```{r}
+# Read the data and filter accordingly
+male_CS = read.csv("../data/male_CS.csv")
+scatter_plot = male_CS %>%
+  mutate(cop = as.factor(cop)) %>%
+  ggplot(aes(x = thorw, y = thorl, colour = cop)) +
+  geom_point(size = 3, alpha = 0.8) +  # Adjusted point size and transparency
+  theme_classic() +
+  labs(
+    title = "Scatter Plot of thorl vs thorw by Copulation Status",
+    x = "thorw (mm)",  # Added unit for clarity
+    y = "thorl (mm)",  # Added unit for clarity
+    colour = "Copulation Status"
+  ) +
+  theme(
+    legend.position = "top",  # Position legend at the top
+    plot.title = element_text(hjust = 0.5, size = 18),  # Centered and scaled title
+    axis.title = element_text(size = 16),              # Adjusted axis title size
+    axis.text = element_text(size = 14)                # Adjusted axis text size
+  )
+
+# Display the plot
+print(scatter_plot)
+
+# Save the plot as a high-resolution PNG
+ggsave(
+  filename = "../results/thorl_vs_thorw_scatter.png", 
+  plot = scatter_plot, 
+  width = 200,  # Width in mm for LaTeX integration
+  height = 150, # Adjusted height for readability
+  units = "mm",
+  dpi = 600
+)
+
+```
 
